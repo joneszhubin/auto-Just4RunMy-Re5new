@@ -23,19 +23,3 @@ JUSTRUNMY_PASSWORD=abc123
 GOST_PROXY_TARGET=socks5://user:pass@123.456.789.012:1080
 
 ━━━━━━━━━━━━━━━━━━━━━━
-
-📍 添加路径（如何添加 Secrets）：
-
-1. 进入你的 GitHub 仓库  
-2. 点击顶部的「Settings」  
-3. 左侧菜单选择「Secrets and variables」 → 「Actions」  
-4. 点击绿色的「New repository secret」按钮  
-5. 分别添加上面的三个变量名称与对应值
-
-━━━━━━━━━━━━━━━━━━━━━━
-
-⚠️ 注意事项：
-
-- Secrets 是私密的，不会显示在代码中
-- 三个变量都为 **必填项**
-- 不要把变量值写入到代码文件中
