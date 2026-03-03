@@ -10,7 +10,7 @@
 |---------------------|----------|---------------------------------------------|
 | JUSTRUNMY_EMAIL     | ✅ 必填  | JustRunMy 登录邮箱                          |
 | JUSTRUNMY_PASSWORD  | ✅ 必填  | JustRunMy 登录密码                          |
-| GOST_PROXY_TARGET   | ✅ 必填  | Gost 代理完整地址（需包含协议，如 socks5://） |
+| GOST_PROXY_TARGET   | ❌ 可选  | Gost 代理完整地址（需包含协议，如 socks5://） |
 
 ━━━━━━━━━━━━━━━━━━━━━━
 
