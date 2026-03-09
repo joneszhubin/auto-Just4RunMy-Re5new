@@ -1,5 +1,6 @@
 # 🚀 JustRunMy 自动续期（GitHub Actions）
-修改自 https://github.com/losy-mify/JustRunMy-Renew，现已修改为支持把整个账号下的多个应用全部续期。
+修改自 https://github.com/losy-mify/JustRunMy-Renew，
+现已修改为支持把整个账号下的多个应用全部续期。
 
 这是一个基于 GitHub Actions 的自动化脚本，用于定时登录并自动续期 JustRunMy 应用。
 
