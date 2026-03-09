@@ -312,78 +312,112 @@ def renew(sb) -> bool:
     sb.open("https://justrunmy.app/panel")
     time.sleep(3)
 
-    print("🖱️ 自动读取应用名称...")
+    print("🖱️ 检查应用卡片...")
     try:
         # 等待带有 font-semibold 的 h3 标签加载
         sb.wait_for_element('h3.font-semibold', timeout=10)
-        # 从网页中抓取真实的名称并保存到全局变量
-        DYNAMIC_APP_NAME = sb.get_text('h3.font-semibold')
-        print(f"🎯 成功抓取到应用名称: {DYNAMIC_APP_NAME}")
-        
-        # 直接点击刚才抓取到的元素
-        sb.click('h3.font-semibold')
-        time.sleep(3)
-        print(f"📍 成功进入应用详情页: {sb.get_current_url()}")
     except Exception as e:
         print(f"❌ 找不到应用卡片: {e}")
         sb.save_screenshot("renew_app_not_found.png")
         send_tg_message("❌", "续期失败(找不到应用)", "未知")
         return False
 
-    print("🖱️ 点击 Reset Timer 按钮...")
-    try:
-        sb.click('button:contains("Reset Timer")')
-        time.sleep(3)
-    except Exception as e:
-        print(f"❌ 找不到 Reset Timer 按钮: {e}")
-        sb.save_screenshot("renew_reset_btn_not_found.png")
-        send_tg_message("❌", "续期失败(找不到按钮)", "未知")
+    # 获取所有 h3.font-semibold 元素的数量
+    app_count = sb.execute_script("return document.querySelectorAll('h3.font-semibold').length")
+    print(f"� 检测到 {app_count} 个应用需要续期")
+    
+    if app_count == 0:
+        print("❌ 没有找到任何应用")
+        send_tg_message("❌", "续期失败(没有应用)", "未知")
         return False
 
-    print("🛡️ 检查续期弹窗内是否需要 CF 验证...")
-    if sb.execute_script(_EXISTS_JS):
-        if not handle_turnstile(sb):
-            print("❌ 弹窗内的 Turnstile 验证失败")
-            sb.save_screenshot("renew_turnstile_fail.png")
-            send_tg_message("❌", "续期失败(人机验证未过)", "未知")
-            return False
-    else:
-        print("ℹ️ 弹窗内未检测到 Turnstile")
-
-    print("🖱️ 点击 Just Reset 确认续期...")
-    try:
-        sb.click('button:contains("Just Reset")')
-        print("⏳ 提交续期请求，等待服务器处理...")
-        time.sleep(5) 
-    except Exception as e:
-        print(f"❌ 找不到 Just Reset 按钮: {e}")
-        sb.save_screenshot("renew_just_reset_not_found.png")
-        send_tg_message("❌", "续期失败(无法确认)", "未知")
-        return False
-
-    print("🔍 验证最终倒计时状态...")
-    try:
-        sb.refresh()
-        time.sleep(4)
-        # 根据页面结构获取剩余时间文本
-        timer_text = sb.get_text('span.font-mono.text-xl')
-        print(f"⏱️ 当前应用剩余时间: {timer_text}")
+    # 逐个处理每个应用
+    for i in range(app_count):
+        print(f"\n{'='*50}")
+        print(f"   处理第 {i+1}/{app_count} 个应用")
+        print(f"{'='*50}")
         
-        if "2 days 23" in timer_text or "3 days" in timer_text:
-            print("✅ 完美！续期任务圆满完成！")
-            sb.save_screenshot("renew_success.png")
-            send_tg_message("✅", "续期完成", timer_text)
-            return True
+        # 返回到控制面板
+        if i > 0:
+            print(" 返回控制面板...")
+            sb.open("https://justrunmy.app/panel")
+            time.sleep(3)
+        
+        try:
+            # 重新获取所有元素并点击第 i 个
+            app_elements = sb.execute_script("return document.querySelectorAll('h3.font-semibold')")
+            if i >= len(app_elements):
+                print(f"⚠️ 应用数量已变化，跳过第 {i+1} 个")
+                continue
+            
+            # 获取应用名称
+            DYNAMIC_APP_NAME = sb.get_text(f'h3.font-semibold:nth-of-type({i+1})')
+            print(f"🎯 应用名称: {DYNAMIC_APP_NAME}")
+            
+            # 点击该应用
+            sb.click(f'h3.font-semibold:nth-of-type({i+1})')
+            time.sleep(3)
+            print(f"📍 成功进入应用详情页: {sb.get_current_url()}")
+        except Exception as e:
+            print(f"❌ 无法点击第 {i+1} 个应用: {e}")
+            sb.save_screenshot(f"renew_app_{i+1}_click_fail.png")
+            continue
+
+        # 点击 Reset Timer 按钮
+        print("� 点击 Reset Timer 按钮...")
+        try:
+            sb.click('button:contains("Reset Timer")')
+            time.sleep(3)
+        except Exception as e:
+            print(f"❌ 找不到 Reset Timer 按钮: {e}")
+            sb.save_screenshot(f"renew_app_{i+1}_reset_btn_not_found.png")
+            continue
+
+        # 检查续期弹窗内是否需要 CF 验证
+        print("🛡️ 检查续期弹窗内是否需要 CF 验证...")
+        if sb.execute_script(_EXISTS_JS):
+            if not handle_turnstile(sb):
+                print("❌ 弹窗内的 Turnstile 验证失败")
+                sb.save_screenshot(f"renew_app_{i+1}_turnstile_fail.png")
+                continue
         else:
-            print("⚠️ 倒计时似乎没有重置到最高值，请人工检查截图确认。")
-            sb.save_screenshot("renew_warning.png")
-            send_tg_message("⚠️", "续期异常(请检查)", timer_text)
-            return True 
-    except Exception as e:
-        print(f"⚠️ 读取倒计时失败，但流程已执行完毕: {e}")
-        sb.save_screenshot("renew_timer_read_fail.png")
-        send_tg_message("⚠️", "读取剩余时间失败", "未知")
-        return False
+            print("ℹ️ 弹窗内未检测到 Turnstile")
+
+        # 点击 Just Reset 确认续期
+        print("🖱️ 点击 Just Reset 确认续期...")
+        try:
+            sb.click('button:contains("Just Reset")')
+            print("⏳ 提交续期请求，等待服务器处理...")
+            time.sleep(5) 
+        except Exception as e:
+            print(f"❌ 找不到 Just Reset 按钮: {e}")
+            sb.save_screenshot(f"renew_app_{i+1}_just_reset_not_found.png")
+            continue
+
+        # 验证最终倒计时状态
+        print("🔍 验证最终倒计时状态...")
+        try:
+            sb.refresh()
+            time.sleep(4)
+            timer_text = sb.get_text('span.font-mono.text-xl')
+            print(f"⏱️ 当前应用剩余时间: {timer_text}")
+            
+            if "2 days 23" in timer_text or "3 days" in timer_text:
+                print(f"✅ 应用 {i+1} 续期完成！")
+                sb.save_screenshot(f"renew_app_{i+1}_success.png")
+                send_tg_message("✅", f"续期完成 ({DYNAMIC_APP_NAME})", timer_text)
+            else:
+                print(f"⚠️ 应用 {i+1} 倒计时似乎没有重置到最高值")
+                sb.save_screenshot(f"renew_app_{i+1}_warning.png")
+                send_tg_message("⚠️", f"续期异常 ({DYNAMIC_APP_NAME})", timer_text)
+        except Exception as e:
+            print(f"⚠️ 读取应用 {i+1} 倒计时失败: {e}")
+            sb.save_screenshot(f"renew_app_{i+1}_timer_read_fail.png")
+
+    print("\n" + "="*50)
+    print("   ✅ 所有应用续期流程完成")
+    print("="*50)
+    return True
 
 # ============================================================
 #  脚本执行入口
